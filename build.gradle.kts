@@ -15,7 +15,22 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     implementation("dev.kord:kord-core:0.8.0-M8")
-    implementation("org.slf4j:slf4j-simple:1.7.30")
+    implementation("org.slf4j:slf4j-simple:2.0.0")
+}
+
+application {
+    applicationName = "Ino"
+    mainClass.set("entry_point.MainKt")
+}
+
+tasks.jar {
+    manifest.attributes["Main-Class"] = "entry_point.MainKt"
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.test {
@@ -24,8 +39,4 @@ tasks.test {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
-}
-
-application {
-    mainClass.set("entry_point.MainKt")
 }

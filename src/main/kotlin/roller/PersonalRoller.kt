@@ -51,7 +51,6 @@ class PersonalRoller(
         val rollResult = diceRoller.roll(bonus)
         history.add(RollRecord(rollCount, rollResult))
         historyMessage.edit {
-            content = ""
             actionRow {
                 selectMenu("$userId history") {
                     placeholder = displayResult(history[0])

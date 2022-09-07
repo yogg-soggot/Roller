@@ -1,6 +1,4 @@
 /.gradle/
 /build/
-/gradle/
-/gradlew
-/gradlew.bat
-/src/main/resources/ino_token.txt
+/src/main/resources/token.properties
+/.idea/
