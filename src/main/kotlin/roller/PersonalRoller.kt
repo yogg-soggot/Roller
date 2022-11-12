@@ -12,11 +12,13 @@ import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dev.kord.rest.builder.message.create.actionRow
 import dev.kord.rest.builder.message.modify.actionRow
 import dice.DiceRoller
-import mention
+import guild.Guilds
+import utils.mention
 import utils.FixedSizeQueue
 import java.security.InvalidKeyException
 
 class PersonalRoller(
+    private val guilds: Guilds,
     private val diceRoller: DiceRoller,
     private val providedUser: Snowflake? = null
 ) : Roller {
@@ -48,7 +50,7 @@ class PersonalRoller(
     override suspend fun onButtonClick(interaction: ButtonInteraction) {
         rollCount++
         val bonus = interaction.component?.label?.extractBonus() ?: throw InvalidKeyException("Cannot extract bonus")
-        val rollResult = diceRoller.roll(bonus)
+        val rollResult = diceRoller.roll(bonus - difficulty(interaction))
         history.add(RollRecord(rollCount, rollResult))
         historyMessage.edit {
             actionRow {
@@ -80,4 +82,9 @@ class PersonalRoller(
     }
 
     private fun String.extractBonus() = drop(1).toIntOrNull()
+
+    private fun difficulty(interaction: ButtonInteraction): Int {
+        val guild = interaction.data.guildId.value ?: throw IllegalStateException("Cannot extract guild id")
+        return guilds.settings[guild]?.difficulty_level ?: 0
+    }
 }
