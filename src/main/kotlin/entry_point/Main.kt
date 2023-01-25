@@ -29,6 +29,12 @@ suspend fun main(args: Array<String>) {
         }
     }
 
+    kord.createGlobalChatInputCommand("extended", "Если диапазона обычного роллера недостаточно") {
+        user("for", "Создать роллер для кого-то другого") {
+            required = false
+        }
+    }
+
     kord.createGlobalChatInputCommand("difficulty", "Меняет сложность боя. +1 к сложности = -1 к броскам") {
         number("roll_disadvantage", "Максимум 3, не больше") {
             required = false
@@ -46,6 +52,12 @@ suspend fun main(args: Array<String>) {
             "roller" -> {
                 val user = runCatching { interaction.command.users.values.first().id }.getOrNull()
                 val roller = PersonalRoller(guilds, DiceRoller(Die(10)), user)
+                roller.init(interaction)
+                rollers.add(roller)
+            }
+            "extended" -> {
+                val user = runCatching { interaction.command.users.values.first().id }.getOrNull()
+                val roller = PersonalRoller(guilds, DiceRoller(Die(10)), user, isExtended = true)
                 roller.init(interaction)
                 rollers.add(roller)
             }

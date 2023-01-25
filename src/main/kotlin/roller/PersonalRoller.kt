@@ -20,14 +20,15 @@ import java.security.InvalidKeyException
 class PersonalRoller(
     private val guilds: Guilds,
     private val diceRoller: DiceRoller,
-    private val providedUser: Snowflake? = null
+    private val providedUser: Snowflake? = null,
+    private val isExtended: Boolean = false,
 ) : Roller {
     lateinit var userId: Snowflake
 
     private var rollCount = 0
     private val history = FixedSizeQueue<RollRecord>(15)
 
-    lateinit var historyMessage: Message
+    private lateinit var historyMessage: Message
     lateinit var interactionId: Snowflake
 
     override suspend fun init(interaction: GuildChatInputCommandInteraction) {
@@ -35,7 +36,10 @@ class PersonalRoller(
         interactionId = interaction.id
         interaction.respondPublic {
             content = "${userId.mention()}, кликай на бонус чтобы бросить"
-            addButtons()
+            if (isExtended) {
+                addButtons(-2..2)
+                addButtons(3..7)
+            } else addButtons(1..5)
         }
         historyMessage = interaction.channel.createMessage {
             actionRow {
@@ -69,19 +73,21 @@ class PersonalRoller(
         userId = providedUser ?: interaction.user.id
     }
 
-    private fun InteractionResponseCreateBuilder.addButtons() {
+    private fun InteractionResponseCreateBuilder.addButtons(range: IntRange) {
+        fun label(bonus: Int) = if(bonus <= 0) "$bonus" else "+$bonus"
         actionRow {
-            for (bonus in 1..5) {
-                interactionButton(ButtonStyle.Primary, buttonId(userId, interactionId, bonus)) { label = "+$bonus" }
+            for (bonus in range) {
+                interactionButton(ButtonStyle.Primary, buttonId(userId, interactionId, bonus)) { label = label(bonus) }
             }
         }
     }
 
     private fun displayResult(rollRecord: RollRecord): String {
-        return "Ролл #${rollRecord.number}: ${rollRecord.outcome} [${rollRecord.roll}+${rollRecord.bonus}]"
+        val sign = if (rollRecord.bonus < 0 ) "" else "+"
+        return "Ролл #${rollRecord.number}: ${rollRecord.outcome} [${rollRecord.roll}$sign${rollRecord.bonus}]"
     }
 
-    private fun String.extractBonus() = drop(1).toIntOrNull()
+    private fun String.extractBonus() = toIntOrNull()
 
     private fun difficulty(interaction: ButtonInteraction): Int {
         val guild = interaction.data.guildId.value ?: throw IllegalStateException("Cannot extract guild id")
