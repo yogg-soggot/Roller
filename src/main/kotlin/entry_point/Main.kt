@@ -13,13 +13,12 @@ import dev.kord.rest.builder.interaction.user
 import dice.DiceRoller
 import dice.Die
 import guild.Guilds
-import kotlinx.coroutines.flow.collect
 import roller.PersonalRoller
 import roller.Rollers
 
 suspend fun main(args: Array<String>) {
 
-    val kord = Kord(TokenLoader(args))
+    val kord = Kord(getToken(args) ?: return)
 
     //kord.globalCommands.collect { it.delete() }
 
@@ -87,4 +86,12 @@ suspend fun main(args: Array<String>) {
     }
 
     kord.login()
+}
+
+private fun getToken(args: Array<String>): String? {
+    if (args.size == 1) return args[0]
+    println("Program requires exactly one argument")
+    println("Discord bot token is required")
+    println("Usage: java -jar {executable.jar} -{token}")
+    return null
 }
