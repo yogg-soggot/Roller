@@ -82,7 +82,7 @@ suspend fun main(args: Array<String>) {
     }
 
     kord.on<SelectMenuInteractionCreateEvent> {
-        interaction.respondPublic {  }
+        interaction.deferEphemeralMessageUpdate()
     }
 
     kord.login()
