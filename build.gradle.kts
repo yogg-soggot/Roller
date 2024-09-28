@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.20"
+    kotlin("jvm") version "1.9.0"
     application
 }
 
@@ -14,7 +14,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("dev.kord:kord-core:0.8.0-M8")
+    implementation("dev.kord:kord-core:0.14.0")
     implementation("org.slf4j:slf4j-simple:2.0.0")
 }
 
