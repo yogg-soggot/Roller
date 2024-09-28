@@ -52,7 +52,7 @@ class PersonalRoller(
     }
 
     private fun MessageBuilder.headerMessage() {
-        content = "${userId.mention()}, кликай на бонус чтобы бросить"
+        content = "${userId.mention()}, кликай на бонус чтобы бросить (D10)"
         if (isExtended) {
             addButtons(-2..2)
             addButtons(3..7)
