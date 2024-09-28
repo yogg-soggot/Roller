@@ -2,25 +2,19 @@ package roller
 
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.entity.Message
+import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
+import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.entity.interaction.GuildChatInputCommandInteraction
 import dev.kord.rest.builder.component.option
+import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dice.DiceRoller
 import guild.Guilds
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import utils.FixedSizeQueue
 import utils.mention
 import java.security.InvalidKeyException
-import kotlin.coroutines.coroutineContext
 
 class PersonalRoller(
     private val guilds: Guilds,
@@ -33,26 +27,15 @@ class PersonalRoller(
     private var rollCount = 0
     private val history = FixedSizeQueue<RollRecord>(15)
 
-    private lateinit var historyMessage: Message
+    private lateinit var interactionResponse: PublicMessageInteractionResponseBehavior
     lateinit var interactionId: Snowflake
 
     override suspend fun init(interaction: GuildChatInputCommandInteraction) {
         bindUser(interaction)
         interactionId = interaction.id
-        interaction.respondPublic {
-            content = "${userId.mention()}, кликай на бонус чтобы бросить"
-            if (isExtended) {
-                addButtons(-2..2)
-                addButtons(3..7)
-            } else addButtons(1..5)
-        }
-        historyMessage = interaction.channel.createMessage {
-            actionRow {
-                stringSelect("$userId history") {
-                    placeholder = "История бросков"
-                    option("Пока нет бросков", "0")
-                }
-            }
+        interactionResponse = interaction.respondPublic {
+            headerMessage()
+            historyPlaceholder()
         }
     }
 
@@ -61,21 +44,38 @@ class PersonalRoller(
         val bonus = interaction.component.label?.extractBonus() ?: throw InvalidKeyException("Cannot extract bonus")
         val rollResult = diceRoller.roll(bonus - difficulty(interaction))
         history.add(RollRecord(rollCount, rollResult))
-        historyMessage.edit {
-            actionRow {
-                stringSelect("$userId history") {
-                    placeholder = displayResult(history[0])
-                    history.forEachIndexed { i, record ->
-                        option(label = displayResult(record), value = "$i")
-                    }
-                }
+        interactionResponse.edit {
+            headerMessage()
+            historyRecord()
+        }
+        interaction.deferEphemeralMessageUpdate()
+    }
+
+    private fun MessageBuilder.headerMessage() {
+        content = "${userId.mention()}, кликай на бонус чтобы бросить"
+        if (isExtended) {
+            addButtons(-2..2)
+            addButtons(3..7)
+        } else addButtons(1..5)
+    }
+
+    private fun MessageBuilder.historyPlaceholder() {
+        actionRow {
+            stringSelect("$userId history") {
+                placeholder = "История бросков"
+                option("Пока нет бросков", "0")
             }
         }
-        val response = interaction.respondEphemeral { content = displayResult(history[0]) }
+    }
 
-        CoroutineScope(coroutineContext).launch {
-            delay(2000L)
-            response.delete()
+    private fun MessageBuilder.historyRecord() {
+        actionRow {
+            stringSelect("$userId history") {
+                placeholder = displayResult(history[0])
+                history.forEachIndexed { i, record ->
+                    option(label = displayResult(record), value = "$i")
+                }
+            }
         }
     }
 
@@ -83,7 +83,7 @@ class PersonalRoller(
         userId = providedUser ?: interaction.user.id
     }
 
-    private fun InteractionResponseCreateBuilder.addButtons(range: IntRange) {
+    private fun MessageBuilder.addButtons(range: IntRange) {
         fun label(bonus: Int) = if (bonus <= 0) "$bonus" else "+$bonus"
         actionRow {
             for (bonus in range) {
